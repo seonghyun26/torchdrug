@@ -41,7 +41,9 @@ def _get_metric_name(metric):
 __all__ = [
     "PropertyPrediction", "MultipleBinaryClassification", "NodePropertyPrediction", "InteractionPrediction",
     "Unsupervised",
-    "EdgePrediction", "AttributeMasking", "ContextPrediction", "DistancePrediction", "AnglePrediction",
+    "EdgePrediction", "AttributeMasking",
+    "AttributeMaskingWithProteinCode", "ConfidenceScore", 
+    "ContextPrediction", "DistancePrediction", "AnglePrediction",
     "DihedralPrediction",
     "AutoregressiveGeneration", "GCPNGeneration",
     "CenterIdentification", "SynthonCompletion", "Retrosynthesis",

@@ -109,7 +109,7 @@ class WandbLogger(LoggingLogger):
             )
             self.run = wandb.run
         else:
-            self.run = wandb.init(project=project, name=name, dir=dir, **kwargs)
+            self.run = wandb.init(project="gear", name="eddy26", dir=dir, **kwargs)
 
         self.run.define_metric("train/batch/*", step_metric="batch", summary="none")
         for split in ["train", "valid", "test"]:
