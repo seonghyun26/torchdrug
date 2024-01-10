@@ -1,6 +1,8 @@
 import os
 import glob
 
+import numpy as np
+
 from torchdrug import data, utils
 from torchdrug.core import Registry as R
 
@@ -44,7 +46,8 @@ class AlphaFoldDB(data.ProteinDataset):
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000059680_39947_ORYSJ_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000001450_36329_PLAF7_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002494_10116_RAT_v2.tar",
-        "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002311_559292_YEAST_v2.tar",
+        # NOTE: something wrong for this dataset
+        # "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002311_559292_YEAST_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002485_284812_SCHPO_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000008816_93061_STAA8_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002296_353153_TRYCC_v2.tar",
@@ -79,12 +82,11 @@ class AlphaFoldDB(data.ProteinDataset):
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000000586_171101_STRR6_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000035681_6248_STRER_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000030665_36087_TRITR_v2.tar",
-        "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000008524_185431_TRYB2_v2.tar",
+        # "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000008524_185431_TRYB2_v2.tar",
         # "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000002296_353153_TRYCC_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000270924_6293_WUCBA_v2.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000000805_243232_METJA_v2_mini.tar",
         "https://ftp.ebi.ac.uk/pub/databases/alphafold/v2/UP000000805_243232_METJA_v2_mini1000.tar",
-        
     ]
     md5s = [
         "4cd5f596ebfc3d45d9f6b647dc5684af", "b89bee5507f78f971417cc8fd75b40f7", "a6459a1f1a0a22fbf25f1c05c2889ae3",
@@ -92,7 +94,9 @@ class AlphaFoldDB(data.ProteinDataset):
         "fdd16245769bf1f7d91a0e285ac00e52", "66b9750c511182bc5f8ee71fe2ab2a17", "5dadeb5aac704025cac33f7557794858",
         "99b22e0f050d845782d914becbfe4d2f", "da938dfae4fabf6e144f4b5ede5885ec", "2003c09d437cfb4093552c588a33e06d",
         "fba59f386cfa33af3f70ae664b7feac0", "d7a1a6c02213754ee1a1ffb3b41ad4ba", "8a0e8deadffec2aba3b7edd6534b7481",
-        "1854d0bbcf819de1de7b0cfdb6d32b2e", "d9720e3809db6916405db096b520c236", "6b918e9e4d645b12a80468bcea805f1f",
+        "1854d0bbcf819de1de7b0cfdb6d32b2e", 
+        # "d9720e3809db6916405db096b520c236",
+        "6b918e9e4d645b12a80468bcea805f1f",
         "ed0eefe927eb8c3b81cf87eaabbb8d6e", "051369e0dc8fed4798c8b2c68e6cbe2e", "b05ff57164167851651c625dca66ed28",
         "68e7a6e57bd43cb52e344b3190073387", "75d027ac7833f284fda65ea620353e8a", "7d85bb2ee4130096a6d905ab8d726bcc",
         "63498210c88e8bfb1a7346c4ddf73bb1", "5bf2211304ef91d60bb3838ec12d89cd", "4981758eb8980e9df970ac6113e4084c",
@@ -102,17 +106,23 @@ class AlphaFoldDB(data.ProteinDataset):
         "04d491dd1c679e91b5a2f3b9f14db555", "889c051e39305614accdff00414bfa67", "cd87cf24e5135c9d729940194ccc65c8",
         "75eb8bfe866cf3040f4c08a566c32bc1", "fd8e6ddb9c159aab781a11c287c85feb", "b91a2e103980b96f755712f2b559ad66",
         "26187d09b093649686d7c158aa4fd113", "62e16894bb4b8951a82befd24ad4ee21", "85c001df1d91788bf3cc1f97230b1dac",
-        "91a25af808351757b101a8c9c787db9e", "8b3e8645cc4c2484c331759b9d1df5bc", "e8a76a6ab290e6743233510e8d1eb4a5",
+        "91a25af808351757b101a8c9c787db9e", "8b3e8645cc4c2484c331759b9d1df5bc",
+        # "e8a76a6ab290e6743233510e8d1eb4a5",
         "38280bd7804f4c060b0775c4abed9b89", "da938dfae4fabf6e144f4b5ede5885ec", "da938dfae4fabf6e144f4b5ede5885ec"
     ]
     species_nsplit = [
-        2, 1, 1, 2, 1, 1, 1, 3, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 20,
+        2, 1, 1, 2, 1, 1, 1, 3, 2, 1, 1, 1, 1, 2, 1, 1,
+        # 1,
+        1, 1, 1, 2, 20,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, #1, 1, 1, 1, 1
+        1, 1, 1, 
+        # 1,
+        1, 1, 1, #1, 1, 1, 1, 1
     ]
     split_length = 22000
 
     def __init__(self, path, species_id=0, split_id=0, verbose=1, **kwargs):
+        print(f"Loading alphafold dataset species id {species_id}, split {split_id}")
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             os.makedirs(path)
@@ -125,16 +135,11 @@ class AlphaFoldDB(data.ProteinDataset):
         self.processed_file = "%s_%d.pkl.gz" % (species_name, split_id)
         pkl_file = os.path.join(path, self.processed_file)
 
-        # NOTE: Loading pickle file with tqdm progress bar, 20minutes
         if os.path.exists(pkl_file):
+            # NOTE: Loading pickle
             self.load_pickle(pkl_file, verbose=verbose, **kwargs)
         else:
-            tar_file_name = self.urls[species_id].split("/")[-1]
-            tar_file_path = os.path.join(path, tar_file_name)
-            if os.path.exists(tar_file_path):
-                tar_file = tar_file_path
-            else:
-                tar_file = utils.download(self.urls[species_id], path, md5=self.md5s[species_id])
+            tar_file = utils.download(self.urls[species_id], path, md5=self.md5s[species_id])
             pdb_path = utils.extract(tar_file)
             gz_files = sorted(glob.glob(os.path.join(pdb_path, "*.pdb.gz")))
             pdb_files = []

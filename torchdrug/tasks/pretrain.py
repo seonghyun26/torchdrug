@@ -4,7 +4,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torch_scatter import scatter_min
+from torch_scatter import scatter_min, scatter, scatter_mean
 
 from torchdrug import core, tasks, layers
 from torchdrug.data import constant
@@ -97,6 +97,7 @@ class AttributeMasking(tasks.Task, core.Configurable):
 
     def __init__(self, model, mask_rate=0.15, num_mlp_layer=2, graph_construction_model=None):
         super(AttributeMasking, self).__init__()
+        print("\nAttributeMasking Task FLAG\n")
         self.model = model
         self.mask_rate = mask_rate
         self.num_mlp_layer = num_mlp_layer
@@ -147,6 +148,8 @@ class AttributeMasking(tasks.Task, core.Configurable):
             node_feature = output["node_feature"]
         else:
             node_feature = output.get("residue_feature", output.get("node_feature"))
+        
+        # NOTE: DEBUG
         node_feature = node_feature[node_index]
         pred = self.mlp(node_feature)
 
@@ -178,8 +181,9 @@ class AttributeMasking(tasks.Task, core.Configurable):
         return all_loss, metric
 
 
-@R.register("tasks.AttributeMaskingWithProteinCode")
-class AttributeMaskingWithProteinCode(tasks.Task, core.Configurable):
+
+@R.register("tasks.PlddtPrediction")
+class PlddtPrediction(tasks.Task, core.Configurable):
     """
     Parameters:
         model (nn.Module): node representation model
@@ -188,7 +192,7 @@ class AttributeMaskingWithProteinCode(tasks.Task, core.Configurable):
     """
 
     def __init__(self, model, mask_rate=0.15, num_mlp_layer=2, graph_construction_model=None):
-        super(AttributeMaskingWithProteinCode, self).__init__()
+        super(PlddtPrediction, self).__init__()
         self.model = model
         self.mask_rate = mask_rate
         self.num_mlp_layer = num_mlp_layer
@@ -225,8 +229,11 @@ class AttributeMaskingWithProteinCode(tasks.Task, core.Configurable):
             input = graph.node_feature.float()
             input[node_index] = 0
         else:
-            # target = graph.residue_type[node_index]
-            target = graph.b_factor[node_index]
+            assert graph.residue_type.shape[0] == graph.b_factor.shape[0]
+            assert max(node_index) < graph.residue_type.shape[0]
+            target = graph.b_factor[node_index]/5
+            target = target.long()
+            # assert torch.all(target>0)
             with graph.residue():
                 graph.residue_feature[node_index] = 0
                 graph.residue_type[node_index] = 0
@@ -241,12 +248,18 @@ class AttributeMaskingWithProteinCode(tasks.Task, core.Configurable):
         else:
             node_feature = output.get("residue_feature", output.get("node_feature"))
             
-        # TODO: Make node-wise representations by "point + protein code"
-        atom2residue = torch.repeat_interleave(torch.arange(graph.batch_size).to(graph.num_residues), graph.num_atoms)
-        protein_code = scatter_mean(node_feature, atom2residue, dim=0)
+        # NOTE: Make protein code
+        residue2protein_map = torch.repeat_interleave(num_nodes)
+        protein_code = scatter_mean(node_feature, residue2protein_map, dim=0)
+        protein_code_repeated = torch.repeat_interleave(protein_code, num_samples, dim=0)
+
         node_feature = node_feature[node_index]
-        node_feature_protein_code = torch.cat([node_feature, protein_code], dim=1)
-        pred = self.mlp(node_feature_protein_code)
+        
+        # NOTE: Concatenate node-wise representations with protein code
+        node_feature_with_protein_code = torch.cat([node_feature, protein_code_repeated], dim=1)
+        
+        # pred = self.mlp(node_feature)
+        pred = self.mlp(node_feature_with_protein_code)
 
         return pred, target
 
@@ -274,100 +287,7 @@ class AttributeMaskingWithProteinCode(tasks.Task, core.Configurable):
         all_loss += loss
 
         return all_loss, metric
-
-
-
-@R.register("tasks.ConfidenceScore")
-class ConfidenceScore(tasks.Task, core.Configurable):
-    """
-    Parameters:
-        model (nn.Module): node representation model
-        mask_rate (float, optional): rate of masked nodes
-        num_mlp_layer (int, optional): number of MLP layers
-    """
-
-    def __init__(self, model, mask_rate=0.15, num_mlp_layer=2, graph_construction_model=None):
-        super(ConfidenceScore, self).__init__()
-        self.model = model
-        self.mask_rate = mask_rate
-        self.num_mlp_layer = num_mlp_layer
-        self.graph_construction_model = graph_construction_model
-
-    def preprocess(self, train_set, valid_set, test_set):
-        data = train_set[0]
-        self.view = getattr(data["graph"], "view", "atom")
-        if hasattr(self.model, "node_output_dim"):
-            model_output_dim = self.model.node_output_dim
-        else:
-            model_output_dim = self.model.output_dim
-        if self.view == "atom":
-            num_label = constant.NUM_ATOM
-        else:
-            num_label = constant.NUM_AMINO_ACID
-        self.mlp = layers.MLP(model_output_dim, [model_output_dim] * (self.num_mlp_layer - 1) + [num_label])
-
-    def predict_and_target(self, batch, all_loss=None, metric=None):
-        graph = batch["graph"]
-        if self.graph_construction_model:
-            graph = self.graph_construction_model.apply_node_layer(graph)
-
-        num_nodes = graph.num_nodes if self.view in ["atom", "node"] else graph.num_residues
-        num_cum_nodes = num_nodes.cumsum(0)
-        num_samples = (num_nodes * self.mask_rate).long().clamp(1)
-        num_sample = num_samples.sum()
-        sample2graph = torch.repeat_interleave(num_samples)
-        node_index = (torch.rand(num_sample, device=self.device) * num_nodes[sample2graph]).long()
-        node_index = node_index + (num_cum_nodes - num_nodes)[sample2graph]
-
-        if self.view == "atom":
-            target = graph.atom_type[node_index]
-            input = graph.node_feature.float()
-            input[node_index] = 0
-        else:
-            target = graph.residue_type[node_index]
-            with graph.residue():
-                graph.residue_feature[node_index] = 0
-                graph.residue_type[node_index] = 0
-            # Generate masked edge features. Any better implementation?
-            if self.graph_construction_model:
-                graph = self.graph_construction_model.apply_edge_layer(graph)
-            input = graph.residue_feature.float()
-
-        # TODO: Instead of node feature, use confidence score by alphafold
-        output = self.model(graph, input, all_loss, metric)
-        if self.view in ["node", "atom"]:
-            node_feature = output["node_feature"]
-        else:
-            node_feature = output.get("residue_feature", output.get("node_feature"))
-        node_feature = node_feature[node_index]
-        pred = self.mlp(node_feature)
-
-        return pred, target
-
-    def evaluate(self, pred, target):
-        metric = {}
-        accuracy = (pred.argmax(dim=-1) == target).float().mean()
-
-        name = tasks._get_metric_name("acc")
-        metric[name] = accuracy
-
-        return metric
-
-    def forward(self, batch):
-        """"""
-        all_loss = torch.tensor(0, dtype=torch.float32, device=self.device)
-        metric = {}
-
-        pred, target = self.predict_and_target(batch, all_loss, metric)
-        metric.update(self.evaluate(pred, target))
-
-        loss = F.cross_entropy(pred, target)
-        name = tasks._get_criterion_name("ce")
-        metric[name] = loss
-
-        all_loss += loss
-
-        return all_loss, metric
+    
 
 
 @R.register("tasks.ContextPrediction")

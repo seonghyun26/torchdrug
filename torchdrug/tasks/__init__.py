@@ -9,12 +9,15 @@ from .retrosynthesis import CenterIdentification, SynthonCompletion, Retrosynthe
 from .reasoning import KnowledgeGraphCompletion
 from .contact_prediction import ContactPrediction
 
+from .pretrain_point import AttributeMaskingWithProteinCode, PlddtPredictionWithProteinCode
+
 
 _criterion_name = {
     "mse": "mean squared error",
     "mae": "mean absolute error",
     "bce": "binary cross entropy",
     "ce": "cross entropy",
+    "pcd": "point cloud distance"
 }
 
 _metric_name = {
@@ -23,6 +26,7 @@ _metric_name = {
     "rmse": "root mean squared error",
     "acc": "accuracy",
     "mcc": "matthews correlation coefficient",
+    "pcd": "point cloud distance"
 }
 
 
@@ -41,8 +45,10 @@ def _get_metric_name(metric):
 __all__ = [
     "PropertyPrediction", "MultipleBinaryClassification", "NodePropertyPrediction", "InteractionPrediction",
     "Unsupervised",
-    "EdgePrediction", "AttributeMasking",
-    "AttributeMaskingWithProteinCode", "ConfidenceScore", 
+    "EdgePrediction",
+    "AttributeMasking",
+    "AttributeMaskingWithProteinCode", "AttributeMaskingIndexCode", "AttributeMaskingPECode", "AttributeMaskingRandomPoints",
+    "PlddtPrediction", "PlddtPredictionWithProteinCode",
     "ContextPrediction", "DistancePrediction", "AnglePrediction",
     "DihedralPrediction",
     "AutoregressiveGeneration", "GCPNGeneration",
