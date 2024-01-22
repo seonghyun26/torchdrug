@@ -97,7 +97,6 @@ class AttributeMasking(tasks.Task, core.Configurable):
 
     def __init__(self, model, mask_rate=0.15, num_mlp_layer=2, graph_construction_model=None):
         super(AttributeMasking, self).__init__()
-        print("\nAttributeMasking Task FLAG\n")
         self.model = model
         self.mask_rate = mask_rate
         self.num_mlp_layer = num_mlp_layer

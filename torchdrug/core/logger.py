@@ -94,7 +94,7 @@ class WandbLogger(LoggingLogger):
         kwargs: keyword arguments for `wandb.init`_
     """
 
-    def __init__(self, project=None, name=None, dir=None, **kwargs):
+    def __init__(self, project="gear", name=None, dir=None, **kwargs):
         super(WandbLogger, self).__init__()
         try:
             import wandb
@@ -109,7 +109,7 @@ class WandbLogger(LoggingLogger):
             )
             self.run = wandb.run
         else:
-            self.run = wandb.init(project="gear", name="eddy26", dir=dir, **kwargs)
+            self.run = wandb.init(project="gear", name=name, dir=dir, **kwargs)
 
         self.run.define_metric("train/batch/*", step_metric="batch", summary="none")
         for split in ["train", "valid", "test"]:

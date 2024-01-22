@@ -1,7 +1,7 @@
 from .task import Task
 
 from .property_prediction import PropertyPrediction, MultipleBinaryClassification, \
-    NodePropertyPrediction, InteractionPrediction, Unsupervised
+    NodePropertyPrediction, InteractionPrediction, Unsupervised, UnsupervisedTwo
 from .pretrain import EdgePrediction, AttributeMasking, ContextPrediction, DistancePrediction, \
     AnglePrediction, DihedralPrediction
 from .generation import AutoregressiveGeneration, GCPNGeneration
@@ -9,7 +9,9 @@ from .retrosynthesis import CenterIdentification, SynthonCompletion, Retrosynthe
 from .reasoning import KnowledgeGraphCompletion
 from .contact_prediction import ContactPrediction
 
-from .pretrain_point import AttributeMaskingWithProteinCode, PlddtPredictionWithProteinCode
+from .pretrain_point import AttributeMaskingByPoints, AttributeMaskingByPointsFiltered, \
+    AttributeMaskingByPointsSet, ConfidenceScoreByPoints,\
+    DenoisingStructure, RandomNoiseMatching, UniformNoiseMatching
 
 
 _criterion_name = {
@@ -17,7 +19,8 @@ _criterion_name = {
     "mae": "mean absolute error",
     "bce": "binary cross entropy",
     "ce": "cross entropy",
-    "pcd": "point cloud distance"
+    "pcd": "point cloud distance",
+    "distance_loss": "total distance loss"
 }
 
 _metric_name = {
@@ -26,7 +29,9 @@ _metric_name = {
     "rmse": "root mean squared error",
     "acc": "accuracy",
     "mcc": "matthews correlation coefficient",
-    "pcd": "point cloud distance"
+    "pcd": "point cloud distance",
+    "sd": "set distance",
+    # "distance_charformer": "distance in embedded space"
 }
 
 
@@ -44,15 +49,17 @@ def _get_metric_name(metric):
 
 __all__ = [
     "PropertyPrediction", "MultipleBinaryClassification", "NodePropertyPrediction", "InteractionPrediction",
-    "Unsupervised",
-    "EdgePrediction",
-    "AttributeMasking",
-    "AttributeMaskingWithProteinCode", "AttributeMaskingIndexCode", "AttributeMaskingPECode", "AttributeMaskingRandomPoints",
-    "PlddtPrediction", "PlddtPredictionWithProteinCode",
+    "Unsupervised", "UnsupervisedTwo"
+    "EdgePrediction","AttributeMasking",
     "ContextPrediction", "DistancePrediction", "AnglePrediction",
     "DihedralPrediction",
     "AutoregressiveGeneration", "GCPNGeneration",
     "CenterIdentification", "SynthonCompletion", "Retrosynthesis",
     "KnowledgeGraphCompletion",
     "ContactPrediction",
+    
+    "AttributeMaskingByPoints", "AttributeMaskingByPointsFiltered", "AttributeMaskingByPointsSet"
+    "ConfidenceScoreByPoints",
+    "DenoisingStructure", "ProteinWorkshopDenoising",
+    "RandomNoiseMatching", "UniformNoiseMatching"
 ]

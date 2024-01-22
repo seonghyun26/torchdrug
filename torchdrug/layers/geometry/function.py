@@ -341,3 +341,68 @@ class SubspaceNode(nn.Module, core.Configurable):
             graph = graph.subresidue(residue_index)
 
         return graph
+
+
+@R.register("layers.geometry.RandomWalk")
+class RandomWalk(nn.Module, core.Configurable):
+    """
+    Construct nodes by taking a spatial ball of the original graph.
+
+    Parameters:
+        entity_level (str, optional): level to perform cropping. 
+            Available options are ``node``, ``atom`` and ``residue``.
+        min_radius (float, optional): minimum radius of the spatial ball
+        min_neighbor (int, optional): minimum number of nodes in the spatial ball
+    """
+
+    def __init__(self, entity_level="node", min_radius=15.0, min_neighbor=50, max_length=50):
+        super(RandomWalk, self).__init__()
+        self.entity_level = entity_level
+        self.min_radius = min_radius
+        self.min_neighbor = min_neighbor
+        self.max_length = max_length
+
+    def forward(self, graph):
+        """
+        Randomly pick a node as the center, and crop a spatial ball
+        that is at least `radius` large and contain at least `k` nodes.
+
+        Parameters:
+            graph (Graph): :math:`n` graph(s)
+        """
+        node_in = torch.arange(graph.num_node, device=graph.device)
+        node_in = functional.variadic_sample(node_in, graph.num_nodes, 1).squeeze(-1)
+        node_in = node_in.repeat_interleave(graph.num_nodes)
+        node_out = torch.arange(graph.num_node, device=graph.device)
+        dist = (graph.node_position[node_in] - graph.node_position[node_out]).norm(dim=-1)
+        topk_dist = functional.variadic_topk(dist, graph.num_nodes, self.min_neighbor, largest=False)[0]
+        radius = (topk_dist[:, -1] * 1.5).clamp(min=self.min_radius)
+        radius = radius.repeat_interleave(graph.num_nodes)
+        
+        # NOTE: Make a node_index, node selected by random walk
+        node_pos_split = torch.split(graph.node_position, graph.num_nodes.tolist())
+        dist_split = list(map(lambda x: torch.cdist(x, x), node_pos_split))
+        dist_filter_split = list(map(lambda x: (x < self.min_radius).to_sparse(), dist_split))
+        
+        pair_dist = torch.cdist(graph.node_position, graph.node_position)
+        adj = graph.adjacency
+        adj_with_distance = adj[pair_dist < self.min_radius]
+        
+        # Filter adj with distance matrix
+        # Rnadom sample the path from the walk, using adj
+        
+        # node_in = functional.variadic_sample(node_index, graph.num_nodes, 1).squeeze(-1)
+        # node_in = node_in.repeat_interleave(graph.num_nodes)
+        # dist = (graph.node_position[node_in] - graph.node_position[node_out]).norm(dim=-1)
+        # topk_dist = functional.variadic_topk(dist, graph.num_nodes, self.min_neighbor, largest=False)[0]
+        # radius = (topk_dist[:, -1] * 1.5).clamp(min=self.min_radius)
+        # radius = radius.repeat_interleave(graph.num_nodes)
+        
+
+        if self.entity_level in ["node", "atom"]:
+            graph = graph.subgraph(node_index)
+        else:
+            residue_index = graph.atom2residue[node_index].unique()
+            graph = graph.subresidue(residue_index)
+
+        return graph

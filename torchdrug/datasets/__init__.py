@@ -40,6 +40,8 @@ from .proteinnet import ProteinNet
 from .enzyme_commission import EnzymeCommission
 from .gene_ontology import GeneOntology
 from .alphafolddb import AlphaFoldDB
+from .alphafolddb_1k import AlphaFoldDB1K
+from .alphafolddb_10k import AlphaFoldDB10K
 
 from .fb15k import FB15k, FB15k237
 from .wn18 import WN18, WN18RR
@@ -55,7 +57,7 @@ __all__ = [
     "Malaria", "MOSES", "MUV", "OPV", "QM8", "QM9", "SIDER", "Tox21", "ToxCast",
     "USPTO50k", "ZINC250k",
     "ZINC2m", "PCQM4M", "PubChem110m", "ChEMBLFiltered",
-    "EnzymeCommission", "GeneOntology", "AlphaFoldDB",
+    "EnzymeCommission", "GeneOntology", "AlphaFoldDB", "AlphaFoldDB1K", "AlphaFoldDB10K"
     "BetaLactamase", "Fluorescence", "Stability", "Solubility", "Fold", 
     "BinaryLocalization", "SubcellularLocalization", "SecondaryStructure",
     "HumanPPI", "YeastPPI", "PPIAffinity", "BindingDB", "PDBBind", "ProteinNet",

@@ -113,6 +113,8 @@ class GraphConstruction(nn.Module, core.Configurable):
         num_edges = edge2graph.bincount(minlength=graph.batch_size)
         offsets = (graph.num_cum_nodes - graph.num_nodes).repeat_interleave(num_edges)
 
+        
+        # NOTE: Debug here
         if hasattr(self, "edge_%s" % self.edge_feature):
             edge_feature = getattr(self, "edge_%s" % self.edge_feature)(graph, edge_list, num_relation)
         elif self.edge_feature is None:

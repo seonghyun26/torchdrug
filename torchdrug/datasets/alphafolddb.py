@@ -2,6 +2,7 @@ import os
 import glob
 
 import numpy as np
+import torch
 
 from torchdrug import data, utils
 from torchdrug.core import Registry as R
@@ -150,22 +151,31 @@ class AlphaFoldDB(data.ProteinDataset):
             self.save_pickle(pkl_file, verbose=verbose)
 
     def get_item(self, index):
+        # print(f"Getting protein data, lazy: {getattr(self, 'lazy', False)} ...")
         if getattr(self, "lazy", False):
             protein = data.Protein.from_pdb(self.pdb_files[index], self.kwargs)
         else:
-            protein = self.data[index].clone()
+            # NOTE: Do we need to clone?
+            # protein = self.data[index].clone()
+            protein = self.data[index]
+        
+        # print(f" >> Set attributes of protein")
         if hasattr(protein, "residue_feature"):
             with protein.residue():
                 protein.residue_feature = protein.residue_feature.to_dense()
-        # NOTE: protein b_factor added
+        # NOTE: Also add protein b_factor
         if hasattr(protein, "b_factor"):
             with protein.residue():
                 unique_values, counts = np.unique(protein.atom2residue, return_counts=True)
                 cumulative_counts = np.concatenate(([0], np.cumsum(counts)))[:-1]
                 protein.residue_b_factor = protein.b_factor[cumulative_counts]
         item = {"graph": protein}
+        
+        # print(f" >> Transforming protein in {protein.device} ...")
         if self.transform:
             item = self.transform(item)
+            
+        # print(f" Done..!")
         return item
 
     def __repr__(self):

@@ -12,6 +12,7 @@ from torchdrug import data, core, utils
 from torchdrug.core import Registry as R
 from torchdrug.utils import comm, pretty
 
+from tqdm import tqdm
 
 module = sys.modules[__name__]
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ class Engine(core.Configurable):
     """
 
     def __init__(self, task, train_set, valid_set, test_set, optimizer, scheduler=None, gpus=None, batch_size=1,
-                 gradient_interval=1, num_worker=0, logger="logging", log_interval=100):
+                 gradient_interval=1, num_worker=0, logger="logging", wandb_name="temp", log_interval=100):
         self.rank = comm.get_rank()
         self.world_size = comm.get_world_size()
         self.gpus = gpus
@@ -85,7 +86,7 @@ class Engine(core.Configurable):
 
         if hasattr(task, "preprocess"):
             if self.rank == 0:
-                module.logger.warning("Preprocess training set")
+                module.logger.warning("Preprocess training set...")
             # TODO: more elegant implementation
             # handle dynamic parameters in optimizer
             old_params = list(task.parameters())
@@ -95,6 +96,8 @@ class Engine(core.Configurable):
             new_params = list(task.parameters())
             if len(new_params) != len(old_params):
                 optimizer.add_param_group({"params": new_params[len(old_params):]})
+        module.logger.warning("Preprocess training set done...!")
+        
         if self.world_size > 1:
             task = nn.SyncBatchNorm.convert_sync_batchnorm(task)
             buffers_to_ignore = []
@@ -116,7 +119,7 @@ class Engine(core.Configurable):
             if logger == "logging":
                 logger = core.LoggingLogger()
             elif logger == "wandb":
-                logger = core.WandbLogger(project=task.__class__.__name__)
+                logger = core.WandbLogger(project=task.__class__.__name__, name=wandb_name)
             else:
                 raise ValueError("Unknown logger `%s`" % logger)
         self.meter = core.Meter(log_interval=log_interval, silent=self.rank > 0, logger=logger)
@@ -153,8 +156,10 @@ class Engine(core.Configurable):
             start_id = 0
             # the last gradient update may contain less than gradient_interval batches
             gradient_interval = min(batch_per_epoch - start_id, self.gradient_interval)
-
-            for batch_id, batch in enumerate(islice(dataloader, batch_per_epoch)):
+            
+            pbar = enumerate(tqdm(islice(dataloader, batch_per_epoch), desc="Training batch", total=len(dataloader)))
+            # NOTE: This for loop looks strange
+            for batch_id, batch in pbar:
                 if self.device.type == "cuda":
                     batch = utils.cuda(batch, device=self.device)
 

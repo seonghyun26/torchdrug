@@ -567,3 +567,36 @@ class Unsupervised(nn.Module, core.Configurable):
             graph = self.graph_construction_model(graph)
         pred = self.model(graph, graph.node_feature.float(), all_loss=all_loss, metric=metric)
         return pred
+
+
+@R.register("tasks.UnsupervisedTwo")
+class UnsupervisedTwo(nn.Module, core.Configurable):
+    """
+    Wrapper task for unsupervised learning.
+
+    The unsupervised loss should be computed by the model.
+
+    Parameters:
+        model (nn.Module): any model
+    """
+
+    def __init__(self, model, graph_construction_model=None):
+        super(UnsupervisedTwo, self).__init__()
+        self.model = model
+        self.graph_construction_model = graph_construction_model
+
+    def forward(self, batch):
+        """"""
+        all_loss = torch.tensor(0, dtype=torch.float32, device=self.device)
+        metric = {}
+
+        pred = self.predict(batch, all_loss, metric)
+
+        return all_loss, metric
+
+    def predict(self, batch, all_loss=None, metric=None):
+        graph = batch["graph"]
+        if self.graph_construction_model:
+            graph = self.graph_construction_model(graph)
+        pred = self.model(graph, graph.node_feature.float(), all_loss=all_loss, metric=metric)
+        return pred

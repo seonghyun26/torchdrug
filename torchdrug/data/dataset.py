@@ -790,6 +790,7 @@ class ProteinDataset(MoleculeDataset, core.Configurable):
 
         return self.load_sequence(sequences, verbose=verbose, **kwargs)
 
+    # NOTE: alphafold dataset function uses thie load_pickle
     @utils.copy_args(data.Protein.from_molecule)
     def load_pickle(self, pkl_file, transform=None, lazy=False, verbose=0, **kwargs):
         """
@@ -814,7 +815,7 @@ class ProteinDataset(MoleculeDataset, core.Configurable):
             self.data = []
             indexes = range(num_sample)
             if verbose:
-                indexes = tqdm(indexes, "Loading %s" % pkl_file)
+                indexes = tqdm(indexes, "Loading pickle %s" % pkl_file)
             for i in indexes:
                 pdb_file, sequence, protein = pickle.load(fin)
                 self.sequences.append(sequence)

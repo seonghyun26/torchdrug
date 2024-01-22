@@ -307,6 +307,7 @@ class Protein(Molecule):
 
     @classmethod
     @utils.deprecated_alias(node_feature="atom_feature", edge_feature="bond_feature", graph_feature="mol_feature")
+    # NOTE: from alphafolddb.py,
     def from_pdb(cls, pdb_file, atom_feature="default", bond_feature="default", residue_feature="default",
                  mol_feature=None, kekulize=False):
         """
